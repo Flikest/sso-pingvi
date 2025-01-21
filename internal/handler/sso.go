@@ -9,7 +9,7 @@ type Handler struct {
 	services *services.Services
 }
 
-func initRouter(service *services.Services) *Handler {
+func InitRouter(service *services.Services) *Handler {
 	return &Handler{services: service}
 }
 
@@ -18,4 +18,6 @@ func (h Handler) NewRouter() fiber.App {
 
 	ssoRouter := router.Group("/sso")
 	ssoRouter.Get("user", h.services.GetUserById())
+
+	return router
 }

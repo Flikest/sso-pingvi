@@ -16,14 +16,7 @@ type Storage struct {
 	ctx context.Context
 }
 
-type Sso interface {
-	InsertUser()
-	GetAllUser()
-	GetUserById()
-	DeleteUser()
-}
-
-func initStorage(db *sql.DB) *Storage {
+func InitStorage(db *sql.DB) *Storage {
 	return &Storage{db: db}
 }
 
@@ -40,11 +33,15 @@ func (s Storage) InsertUser(u entity.UserEntity) sql.Result {
 }
 
 func (s Storage) GetAllUser() sql.Result {
-
+	result, err := s.db.ExecContext(s.ctx, "SELECT * FROM users")
+	errors.FailOnError(err, "error when accessing the database:")
+	return result
 }
 
-func (s Storage) GetUserById() sql.Result {
-
+func (s Storage) GetUserById(id uuid.UUID) sql.Result {
+	result, err := s.db.ExecContext(s.ctx, "SELECT * FROM users WHERE id = %s", id)
+	errors.FailOnError(err, "error when accessing the database:")
+	return result
 }
 
 func (s Storage) DeleteUser(id uuid.UUID) sql.Result {

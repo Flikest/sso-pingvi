@@ -3,7 +3,11 @@ package main
 import (
 	"os"
 
-	postgresql "github.com/Flikest/myMicroservices/pkg/clientBD"
+	"github.com/Flikest/myMicroservices/internal/handler"
+	"github.com/Flikest/myMicroservices/internal/services"
+	"github.com/Flikest/myMicroservices/internal/storage"
+	migrations "github.com/Flikest/myMicroservices/migration"
+	postgresql "github.com/Flikest/myMicroservices/pkg/clientBD/postgresql"
 	"github.com/Flikest/myMicroservices/pkg/errors"
 	"github.com/Flikest/myMicroservices/pkg/logger"
 	"github.com/joho/godotenv"
@@ -25,4 +29,12 @@ func main() {
 	})
 	errors.FailOnError(err, "error creating database")
 
+	migrations.CreateMigrations(db, "")
+
+	storage := storage.InitStorage(db)
+	services := services.NewServices(storage)
+	handler := handler.InitRouter(services)
+	router := handler.NewRouter()
+
+	router.Listen(":3000")
 }

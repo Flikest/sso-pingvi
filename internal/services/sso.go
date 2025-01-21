@@ -6,8 +6,8 @@ type Services struct {
 	storage *storage.Storage
 }
 
-func NewServices(storage *storage.Storage) {
-
+func NewServices(storage *storage.Storage) *Services {
+	return &Services{storage: storage}
 }
 
 func (s Services) GetUserById() {
