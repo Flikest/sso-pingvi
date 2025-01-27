@@ -6,6 +6,7 @@ import (
 
 	"log"
 
+	"github.com/Flikest/myMicroservices/internal/entity"
 	"github.com/Flikest/myMicroservices/pkg/errors"
 )
 
@@ -18,7 +19,7 @@ func InitStorage(db *sql.DB) *Storage {
 	return &Storage{db: db}
 }
 
-func (s Storage) InsertUser(u) sql.Result {
+func (s Storage) InsertUser(u *entity.UserEntity) sql.Result {
 	result, err := s.db.ExecContext(s.ctx, "INSERT INTO users (id, name, pass, avatar, about_me) VALUES uuid_generate_v4(), %s, %s, %s, %s", u.Name, u.Pass, u.Avatar, u.About_me)
 	errors.FailOnError(err, "error when accessing the database:")
 	return result

@@ -5,8 +5,8 @@ import (
 	"log/slog"
 
 	"github.com/Flikest/myMicroservices/pkg/errors"
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/postgres"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 )
 
 func CreateMigrations(db *sql.DB, migrationsPath string) {

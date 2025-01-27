@@ -37,9 +37,14 @@ func (s Services) GetAllUser(ctx *fiber.Ctx) {
 }
 
 func (s Services) InsertUser(ctx *fiber.Ctx) {
-	body := ctx.BodyParser(entity.UserEntity{})
-	result := storageSSo.InsertUser(body)
+	var body entity.UserEntity
+	ctx.BodyParser(&body)
+	result := storageSSo.InsertUser(&body)
 	ctx.JSON(result)
 }
 
-func (s Services) DeleteUser() {}
+func (s Services) DeleteUser(ctx *fiber.Ctx) {
+	id := ctx.Params("id")
+	result := storageSSo.DeleteUser(id)
+	ctx.JSON(result)
+}

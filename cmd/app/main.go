@@ -29,7 +29,7 @@ func main() {
 	})
 	errors.FailOnError(err, "error creating database")
 
-	migrations.CreateMigrations(db, "")
+	migrations.CreateMigrations(db, "migration/migration.go")
 
 	storage := storage.InitStorage(db)
 	services := services.NewServices(storage)
