@@ -25,11 +25,13 @@ func main() {
 		Port:     os.Getenv("DB_PORT"),
 		Username: os.Getenv("DB_USER"),
 		Password: os.Getenv("DB_PASS"),
+		DBName:   os.Getenv("DB_NAME"),
 		SSLMode:  os.Getenv("DB_SSLMODE"),
 	})
+	defer db.Close()
 	errors.FailOnError(err, "error creating database")
 
-	migrations.CreateMigrations(db, "migration/migration.go")
+	migrations.CreateMigrations(db, "file://migration/sql/000001.user.sql")
 
 	storage := storage.InitStorage(db)
 	services := services.NewServices(storage)
