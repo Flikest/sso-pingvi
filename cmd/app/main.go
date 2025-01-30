@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/Flikest/myMicroservices/internal/handler"
@@ -10,6 +11,7 @@ import (
 	postgresql "github.com/Flikest/myMicroservices/pkg/clientBD/postgresql"
 	"github.com/Flikest/myMicroservices/pkg/errors"
 	"github.com/Flikest/myMicroservices/pkg/logger"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 )
 
@@ -28,15 +30,16 @@ func main() {
 		DBName:   os.Getenv("DB_NAME"),
 		SSLMode:  os.Getenv("DB_SSLMODE"),
 	})
-	defer db.Close()
 	errors.FailOnError(err, "error creating database")
 
-	migrations.CreateMigrations(db, "file://migration/sql/000001.user.sql")
+	migrations.CreateMigrations(db, "file://migration/sql")
 
-	storage := storage.InitStorage(db)
+	storage := storage.InitStorage(db, context.Background())
 	services := services.NewServices(storage)
 	handler := handler.InitRouter(services)
 	router := handler.NewRouter()
 
-	router.Listen(":3000")
+	err = router.Listen(":3000")
+	errors.FailOnError(err, "error when starting the application")
+
 }
