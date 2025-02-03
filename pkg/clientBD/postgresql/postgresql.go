@@ -19,6 +19,6 @@ func NewDatabase(cfg *Config) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	} else {
-		return db, err
+		return db, nil
 	}
 }

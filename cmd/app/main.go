@@ -20,7 +20,7 @@ func main() {
 
 	env := os.Getenv("LVL")
 	log := logger.InitLogger(env)
-	log.Debug("логер запущен!")
+	log.Info("логер запущен!")
 
 	db, err := postgresql.NewDatabase(&postgresql.Config{
 		Host:     os.Getenv("DB_HOST"),
@@ -32,7 +32,7 @@ func main() {
 	})
 	errors.FailOnError(err, "error creating database")
 
-	migrations.CreateMigrations(db, "file://migration/sql")
+	migrations.CreateMigrations(db, "file://migration/sql/")
 
 	storage := storage.InitStorage(db, context.Background())
 	services := services.NewServices(storage)
@@ -41,5 +41,4 @@ func main() {
 
 	err = router.Listen(":3000")
 	errors.FailOnError(err, "error when starting the application")
-
 }

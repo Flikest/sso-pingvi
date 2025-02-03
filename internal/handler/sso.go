@@ -20,6 +20,7 @@ func (h Handler) NewRouter() fiber.App {
 	ssoRouter.Get("/user", h.services.GetAllUser)
 	ssoRouter.Get("/user/:id", h.services.GetUserById)
 	ssoRouter.Post("/user", h.services.InsertUser)
+	ssoRouter.Post("/login", h.services.LogIn)
 	ssoRouter.Delete("/user/:id", h.services.DeleteUser)
 
 	return *router

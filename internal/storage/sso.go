@@ -3,11 +3,12 @@ package storage
 import (
 	"context"
 	"database/sql"
-
 	"log"
 
 	"github.com/Flikest/myMicroservices/internal/entity"
 	"github.com/Flikest/myMicroservices/pkg/errors"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Storage struct {
@@ -15,32 +16,54 @@ type Storage struct {
 	ctx context.Context
 }
 
-func InitStorage(db *sql.DB) *Storage {
-	return &Storage{db: db}
+func InitStorage(db *sql.DB, ctx context.Context) *Storage {
+	return &Storage{db: db, ctx: ctx}
+}
+
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
 
 func (s Storage) InsertUser(u *entity.UserEntity) sql.Result {
-	result, err := s.db.ExecContext(s.ctx, "INSERT INTO users (id, name, pass, avatar, about_me) VALUES uuid_generate_v4(), %s, %s, %s, %s", u.Name, u.Pass, u.Avatar, u.About_me)
+	password, err := HashPassword(u.Pass)
+	errors.FailOnError(err, "password hash error: ")
+	result, err := s.db.ExecContext(s.ctx, "INSERT INTO users (id, name, pass, avatar, about_me) VALUES ($1, $2, $3, $4, $5) RETURNING *", uuid.New(), u.Name, password, u.Avatar, u.About_me)
 	errors.FailOnError(err, "error when accessing the database:")
 	return result
 }
 
-func (s Storage) GetAllUser() sql.Result {
-	result, err := s.db.ExecContext(s.ctx, "SELECT * FROM users")
-	errors.FailOnError(err, "error when accessing the database:")
+func (s Storage) LogIn(name string, password string) *sql.Row {
+	result := s.db.QueryRowContext(s.ctx, "SELECT * FROM users WHERE name=$1, pass=$2", name, password)
 	return result
 }
 
-func (s Storage) GetUserById(id string) sql.Result {
-	result, err := s.db.ExecContext(s.ctx, "SELECT * FROM users WHERE id = %s", id)
+func (s Storage) GetAllUser() []entity.UserEntity {
+	rows, err := s.db.QueryContext(s.ctx, "SELECT * FROM users")
 	errors.FailOnError(err, "error when accessing the database:")
+	result := []entity.UserEntity{}
+	for rows.Next() {
+		var users = entity.UserEntity{}
+		if err := rows.Scan(&users.Id, &users.Name, &users.Pass, &users.Avatar, &users.About_me); err != nil {
+			log.Fatalln(err)
+		}
+		result = append(result, users)
+	}
+	return result
+}
+
+func (s Storage) GetUserById(id string) *sql.Row {
+	result := s.db.QueryRowContext(s.ctx, "SELECT * FROM users WHERE id=$1", id)
 	return result
 }
 
 func (s Storage) DeleteUser(id string) sql.Result {
-	result, err := s.db.ExecContext(s.ctx, "DELETE FROM users WHERE id=%s", id)
-	if err != nil {
-		log.Fatal(err)
-	}
+	result, err := s.db.ExecContext(s.ctx, "DELETE FROM users WHERE id=$1", id)
+	errors.FailOnError(err, "error when accessing the database:")
 	return result
 }
