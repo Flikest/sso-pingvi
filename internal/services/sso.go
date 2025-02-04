@@ -1,7 +1,7 @@
 package services
 
 import (
-	"time"
+	"os"
 
 	"github.com/Flikest/myMicroservices/internal/entity"
 	"github.com/Flikest/myMicroservices/internal/storage"
@@ -14,15 +14,19 @@ type Services struct {
 	storage *storage.Storage
 }
 
-func createToken(username string) (string, error) {
-	// Create a new JWT token with claims
+func createToken(name, pass, avatar, about_me string) (string, error) {
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": username,                         // Subject (user identifier)
-		"iss": "todo-app",                       // Issuer
-		"aud": getRole(username),                // Audience (user role)
-		"exp": time.Now().Add(time.Hour).Unix(), // Expiration time
-		"iat": time.Now().Unix(),                // Issued at
+		"username": name,
+		"password": pass,
+		"avatar":   avatar,
+		"about_me": about_me,
 	})
+	tokenString, err := claims.SignedString(os.Getenv("SECRET_KEY"))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
 }
 
 func NewServices(storage *storage.Storage) *Services {
@@ -51,8 +55,9 @@ func (s Services) LogIn(ctx *fiber.Ctx) {
 	var body entity.UserEntity
 	ctx.BodyParser(&body)
 	s.storage.LogIn(body.Name, body.Pass)
-	token, err := jwt.New()
+	token, err := createToken(body.Name, body.Pass, body.Avatar, body.About_me)
 	errors.FailOnError(err, "JWT generation error: ")
+	ctx.JSON(token)
 }
 
 func (s Services) DeleteUser(ctx *fiber.Ctx) {
