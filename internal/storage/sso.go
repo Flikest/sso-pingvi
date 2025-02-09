@@ -48,14 +48,16 @@ func (s Storage) InsertUser(u *entity.UserEntity) sql.Result {
 }
 
 func (s Storage) LogIn(name string, password string) *sql.Row {
-	result := s.db.QueryRowContext(s.ctx, "SELECT * FROM users WHERE name=$1, pass=$2", name, password)
+	result := s.db.QueryRowContext(s.ctx, "SELECT * FROM users WHERE name=$1 AND pass=$2", name, password)
 	return result
 }
 
 func (s Storage) GetAllUser() []entity.UserEntity {
 	rows, err := s.db.QueryContext(s.ctx, "SELECT * FROM users")
 	errors.FailOnError(err, "error when accessing the database:")
+
 	result := []entity.UserEntity{}
+
 	for rows.Next() {
 		var users = entity.UserEntity{}
 		if err := rows.Scan(&users.Id, &users.Name, &users.Pass, &users.Avatar, &users.About_me); err != nil {

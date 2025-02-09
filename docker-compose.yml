@@ -1,5 +1,4 @@
-version: '2.26.1'
-
+version: '2.32.4'
 services:
   postgres:
     image: postgres:latest
@@ -11,11 +10,13 @@ services:
     ports:
       - 5433:5432
   rabbitmq:
-    image: rabbitmq:3.10.7-management
-    hostname: rabbitmq
+    image: rabbitmq:3.9-management
+    hostname: my-rabbit
     environment:
       RABBITMQ_DEFAULT_USER: ${MQ_USER}
       RABBITMQ_DEFAULT_PASS: ${MQ_PASS}
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq
     ports:
       - 5673:5672
       - 15673:15672
