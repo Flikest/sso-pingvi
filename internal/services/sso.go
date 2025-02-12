@@ -8,25 +8,24 @@ import (
 	"github.com/Flikest/myMicroservices/pkg/errors"
 	"github.com/gofiber/fiber"
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 )
 
 type Services struct {
 	storage *storage.Storage
 }
 
-func createToken(name, pass, avatar, about_me string) (string, error) {
+func createToken(id uuid.UUID) (string, error) {
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": name,
-		"password": pass,
-		"avatar":   avatar,
-		"about_me": about_me,
+		"id": id,
 	})
 
-	tokenString, err := claims.SignedString(os.Getenv("SECRET_KEY"))
+	tokenString, err := claims.SignedString([]byte(os.Getenv("SECRET_KEY")))
 	if err != nil {
 		return "", err
+	} else {
+		return tokenString, nil
 	}
-	return tokenString, nil
 }
 
 func NewServices(storage *storage.Storage) *Services {
@@ -57,12 +56,13 @@ func (s Services) InsertUser(ctx *fiber.Ctx) {
 }
 
 func (s Services) LogIn(ctx *fiber.Ctx) {
-	var body entity.UserEntity
+	var body entity.UsersLogIn
 	ctx.BodyParser(&body)
 
-	row := s.storage.LogIn(body.Name, body.Pass)
+	id, err := s.storage.LogIn(body.Name, body.Pass)
+	errors.FailOnError(err, "вы ввели некоректные данные")
 
-	token, err := createToken()
+	token, err := createToken(id)
 	errors.FailOnError(err, "JWT generation error: ")
 
 	ctx.JSON(token)

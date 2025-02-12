@@ -38,10 +38,10 @@ func Send(message string) {
 
 	body := []byte(message)
 	err = chanel.PublishWithContext(ctx,
-		"logs", // exchange
-		"",     // routing key
-		false,  // mandatory
-		false,  // immediate
+		"users", // exchange
+		"",      // routing key
+		false,   // mandatory
+		false,   // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        body,

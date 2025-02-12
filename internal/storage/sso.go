@@ -47,9 +47,19 @@ func (s Storage) InsertUser(u *entity.UserEntity) sql.Result {
 	return result
 }
 
-func (s Storage) LogIn(name string, password string) *sql.Row {
-	result := s.db.QueryRowContext(s.ctx, "SELECT * FROM users WHERE name=$1 AND pass=$2", name, password)
-	return result
+func (s Storage) LogIn(name string, password string) (uuid.UUID, error) {
+	var id uuid.UUID
+	var pass string
+
+	err := s.db.QueryRowContext(s.ctx, "SELECT id, pass FROM users WHERE name=$1", name).Scan(&id, &pass)
+	if err != nil && err == sql.ErrNoRows {
+		return uuid.Nil, err
+	}
+	if CheckPasswordHash(password, pass) {
+		return id, nil
+	} else {
+		return uuid.Nil, fmt.Errorf("you entered incorrect data")
+	}
 }
 
 func (s Storage) GetAllUser() []entity.UserEntity {
