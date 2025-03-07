@@ -12,7 +12,7 @@ import (
 )
 
 func Send(message string) {
-	connectingString := fmt.Sprintf("amqp://%s:%s@localhost:5673/", os.Getenv("MQ_USER"), os.Getenv("MQ_PASS"))
+	connectingString := fmt.Sprintf("amqp://%s:%s@localhost:5672/", os.Getenv("MQ_USER"), os.Getenv("MQ_PASS"))
 
 	conn, err := amqp.Dial(connectingString)
 	errors.FailOnError(err, "Failed to connect to RabbitMQ")
@@ -23,13 +23,13 @@ func Send(message string) {
 	defer chanel.Close()
 
 	err = chanel.ExchangeDeclare(
-		"users",  // name
-		"fanout", // type
-		true,     // durable
-		false,    // auto-deleted
-		false,    // internal
-		false,    // no-wait
-		nil,      // arguments
+		"users",
+		"fanout",
+		true,
+		false,
+		false,
+		false,
+		nil,
 	)
 	errors.FailOnError(err, "Failed to declare an exchange")
 
@@ -38,10 +38,10 @@ func Send(message string) {
 
 	body := []byte(message)
 	err = chanel.PublishWithContext(ctx,
-		"users", // exchange
-		"",      // routing key
-		false,   // mandatory
-		false,   // immediate
+		"users",
+		"",
+		false,
+		false,
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        body,

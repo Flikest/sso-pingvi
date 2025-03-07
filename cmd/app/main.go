@@ -18,8 +18,7 @@ import (
 func main() {
 	godotenv.Load()
 
-	env := os.Getenv("LVL")
-	log := logger.InitLogger(env)
+	log := logger.InitLogger(os.Getenv("LVL"))
 	log.Info("логер запущен!")
 
 	db, err := postgresql.NewDatabase(&postgresql.Config{

@@ -1,31 +1,15 @@
 package services
 
 import (
-	"os"
-
 	"github.com/Flikest/myMicroservices/internal/entity"
 	"github.com/Flikest/myMicroservices/internal/storage"
 	"github.com/Flikest/myMicroservices/pkg/errors"
+	"github.com/Flikest/myMicroservices/pkg/jwt"
 	"github.com/gofiber/fiber"
-	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 )
 
 type Services struct {
 	storage *storage.Storage
-}
-
-func createToken(id uuid.UUID) (string, error) {
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id": id,
-	})
-
-	tokenString, err := claims.SignedString([]byte(os.Getenv("SECRET_KEY")))
-	if err != nil {
-		return "", err
-	} else {
-		return tokenString, nil
-	}
 }
 
 func NewServices(storage *storage.Storage) *Services {
@@ -60,9 +44,9 @@ func (s Services) LogIn(ctx *fiber.Ctx) {
 	ctx.BodyParser(&body)
 
 	id, err := s.storage.LogIn(body.Name, body.Pass)
-	errors.FailOnError(err, "вы ввели некоректные данные")
+	errors.FailOnError(err, "You introduced incorrect data")
 
-	token, err := createToken(id)
+	token, err := jwt.CreateRefreshToken(id)
 	errors.FailOnError(err, "JWT generation error: ")
 
 	ctx.JSON(token)
