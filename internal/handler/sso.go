@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/Flikest/myMicroservices/internal/services"
+	middleware "github.com/Flikest/myMicroservices/pkg/middleware"
 	"github.com/gofiber/fiber"
 )
 
@@ -20,7 +21,7 @@ func (h Handler) NewRouter() fiber.App {
 	ssoRouter.Post("/logup", h.services.InsertUser)
 	ssoRouter.Post("/login", h.services.LogIn)
 
-	userRouter := router.Group("/user")
+	userRouter := router.Group("/user", middleware.IsAuthorized)
 	userRouter.Get("/", h.services.GetAllUser)
 	ssoRouter.Get("/:id", h.services.GetUserById)
 	ssoRouter.Delete("/:id", h.services.DeleteUser)
