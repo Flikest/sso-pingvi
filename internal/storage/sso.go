@@ -38,10 +38,10 @@ func (s Storage) InsertUser(u *entity.UserEntity) sql.Result {
 
 	id := uuid.New()
 
-	result, err := s.db.ExecContext(s.ctx, "INSERT INTO users (id, name, pass, avatar, about_me) VALUES ($1, $2, $3, $4, $5) RETURNING *", id, u.Name, password, u.Avatar, u.About_me)
+	result, err := s.db.ExecContext(s.ctx, "INSERT INTO users (id, name, email, pass, avatar, about_me) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", id, u.Name, u.Email, password, u.Avatar, u.About_me)
 	errors.FailOnError(err, "error when accessing the database:")
 
-	queryExchenge := fmt.Sprintf("%s,%s,%s,%s,%s", id, u.Name, password, u.Avatar, u.About_me)
+	queryExchenge := fmt.Sprintf("%s,%s,%s,%s,%s", id, u.Name, u.Email, password, u.Avatar, u.About_me)
 	rabbitmq.Send(queryExchenge)
 
 	return result

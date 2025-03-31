@@ -45,6 +45,7 @@ func (s Services) InsertUser(ctx *fiber.Ctx) {
 
 	ctx.JSON(result)
 }
+
 func (s Services) LogIn(ctx *fiber.Ctx) {
 	var body entity.UsersLogIn
 	ctx.BodyParser(&body)
