@@ -1,26 +1,27 @@
 package storage
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
-	"log"
 
-	"github.com/Flikest/myMicroservices/internal/entity"
-	"github.com/Flikest/myMicroservices/pkg/errors"
-	"github.com/Flikest/myMicroservices/rabbitmq"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Storage struct {
-	db  *sql.DB
-	ctx context.Context
-}
+type (
+	User struct {
+		Id       string `json:"id"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Pass     string `json:"pass"`
+		Avatar   string `json:"avatar"`
+		About_me string `json:"about_me"`
+	}
 
-func InitStorage(db *sql.DB, ctx context.Context) *Storage {
-	return &Storage{db: db, ctx: ctx}
-}
+	UsersLogIn struct {
+		Name string `json:"name"`
+		Pass string `json:"pass"`
+	}
+)
 
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
@@ -32,59 +33,77 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func (s Storage) InsertUser(u *entity.UserEntity) sql.Result {
+func (s *Storage) InsertUser(u User) error {
 	password, err := HashPassword(u.Pass)
-	errors.FailOnError(err, "password hash error: ")
+	if err != nil {
+		s.Log.Error("password hash error: ")
+
+	}
 
 	id := uuid.New()
 
-	result, err := s.db.ExecContext(s.ctx, "INSERT INTO users (id, name, email, pass, avatar, about_me) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", id, u.Name, u.Email, password, u.Avatar, u.About_me)
-	errors.FailOnError(err, "error when accessing the database:")
+	_, err = s.DB.Exec(s.Ctx, "INSERT INTO users (id, name, email, pass, avatar, about_me) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", id, u.Name, u.Email, password, u.Avatar, u.About_me)
+	if err != nil {
+		s.Log.Error("error when accessing the database: ", "err", err)
+		return err
+	}
 
-	queryExchenge := fmt.Sprintf("%s,%s,%s,%s,%s", id, u.Name, u.Email, password, u.Avatar, u.About_me)
-	rabbitmq.Send(queryExchenge)
-
-	return result
+	return nil
 }
 
-func (s Storage) LogIn(name string, password string) (uuid.UUID, error) {
+func (s *Storage) LogIn(login UsersLogIn) (uuid.UUID, error) {
 	var id uuid.UUID
 	var pass string
 
-	err := s.db.QueryRowContext(s.ctx, "SELECT id, pass FROM users WHERE name=$1", name).Scan(&id, &pass)
-	if err != nil && err == sql.ErrNoRows {
+	row := s.DB.QueryRow(s.Ctx, "SELECT id, pass FROM users WHERE name=$1", login.Name)
+	if err := row.Scan(&id, &pass); err != nil {
+		s.Log.Error("error with selecting id and password from users table by name param: ", "err", err)
 		return uuid.Nil, err
 	}
-	if CheckPasswordHash(password, pass) {
+
+	if CheckPasswordHash(login.Pass, pass) {
 		return id, nil
 	} else {
 		return uuid.Nil, fmt.Errorf("you entered incorrect data")
 	}
 }
 
-func (s Storage) GetAllUser() []entity.UserEntity {
-	rows, err := s.db.QueryContext(s.ctx, "SELECT * FROM users")
-	errors.FailOnError(err, "error when accessing the database:")
+func (s *Storage) GetAllUser() ([]User, error) {
+	rows, err := s.DB.Query(s.Ctx, "SELECT * FROM users")
+	if err != nil {
+		s.Log.Error("error when accessing the database:", "err", err)
+	}
+	defer rows.Close()
 
-	result := []entity.UserEntity{}
+	users := []User{}
 
 	for rows.Next() {
-		var users = entity.UserEntity{}
-		if err := rows.Scan(&users.Id, &users.Name, &users.Pass, &users.Avatar, &users.About_me); err != nil {
-			log.Fatalln(err)
+		var user = User{}
+		if err := rows.Scan(&user.Id, &user.Name, &user.Pass, &user.Avatar, &user.About_me); err != nil {
+			s.Log.Error("error with scaning users table: ", "err", err)
+			return nil, err
 		}
-		result = append(result, users)
+		users = append(users, user)
 	}
-	return result
+	return users, nil
 }
 
-func (s Storage) GetUserById(id string) *sql.Row {
-	result := s.db.QueryRowContext(s.ctx, "SELECT * FROM users WHERE id=$1", id)
-	return result
+func (s *Storage) GetUserById(id string) (User, error) {
+	var user User
+	err := s.DB.QueryRow(s.Ctx, "SELECT * FROM users WHERE id=$1", id).Scan(&user.Id, &user.Name, &user.Email, &user.Pass, &user.Avatar, &user.About_me)
+	if err != nil {
+		s.Log.Error("error wiht selecting data form user table by id: ", "err", err)
+		return user, err
+	}
+
+	return user, nil
 }
 
-func (s Storage) DeleteUser(id string) sql.Result {
-	result, err := s.db.ExecContext(s.ctx, "DELETE FROM users WHERE id=$1", id)
-	errors.FailOnError(err, "error when accessing the database:")
-	return result
+func (s *Storage) DeleteUser(id string) error {
+	_, err := s.DB.Exec(s.Ctx, "DELETE FROM users WHERE id=$1", id)
+	if err != nil {
+		s.Log.Error("error when accessing the database: ", "err", err)
+		return err
+	}
+	return nil
 }

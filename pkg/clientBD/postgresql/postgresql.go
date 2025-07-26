@@ -1,21 +1,18 @@
 package postgresql
 
 import (
-	"database/sql"
-	"fmt"
+	"context"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type Config struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	DBName   string
-	SSLMode  string
+	Context          context.Context
+	ConnectingString string
 }
 
-func NewDatabase(cfg *Config) (*sql.DB, error) {
-	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.Password, cfg.SSLMode))
+func DatabaseInit(cfg *Config) (*pgx.Conn, error) {
+	db, err := pgx.Connect(cfg.Context, cfg.ConnectingString)
 	if err != nil {
 		return nil, err
 	} else {
